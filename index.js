@@ -7,15 +7,15 @@
  */
 
 function getFromDB (key) {
-  return openUserDB().then(db => new Promise((resolve, reject) => {
-    let transaction = db.transaction(['app_data'], 'readwrite');
+  return new Promise((resolve, reject) => {
+    let transaction = this.database.transaction(['app_data'], 'readwrite');
     let dataRequest = transaction.objectStore('app_data').get(1);
     transaction.oncomplete = resolve(new Promise((resolve, reject) => {
       dataRequest.onerror = reject;
       dataRequest.onsuccess = (event) => resolve(key && event.target.result ? event.target.result[key] : event.target.result);
     }));
     transaction.onerror = reject;
-  }));
+  });
 }
 
 /**
