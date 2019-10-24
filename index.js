@@ -67,7 +67,7 @@ function DBManager (database) {
  * https://developer.mozilla.org/en-US/docs/Web/API/IDBOpenDBRequest
  * @returns {DBManager}
  */
-module.exports = function openDB (dataBaseName, storeName) {
+DBManager.openDB (dataBaseName, storeName) {
   return new Promise((resolve, reject) => {
     let openRequest = indexedDB.open(dataBaseName, 1);
     openRequest.onsuccess = () => resolve(new DBManager(openRequest.result));
@@ -81,3 +81,5 @@ module.exports = function openDB (dataBaseName, storeName) {
     openRequest.onerror = reject;
   });
 }
+
+module.exports = DBManager;
