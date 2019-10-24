@@ -8,8 +8,8 @@
 
 function getFromDB (key) {
   return new Promise((resolve, reject) => {
-    let transaction = this.database.transaction(['app_data'], 'readwrite');
-    let dataRequest = transaction.objectStore('app_data').get(1);
+    let transaction = this.database.transaction([this.storeName], 'readwrite');
+    let dataRequest = transaction.objectStore(this.storeName).get(1);
     transaction.oncomplete = resolve(new Promise((resolve, reject) => {
       dataRequest.onerror = reject;
       dataRequest.onsuccess = (event) => resolve(key && event.target.result ? event.target.result[key] : event.target.result);
@@ -28,7 +28,7 @@ function getFromDB (key) {
  */
 function saveToDB (key, value) {
   return new Promise((resolve, reject) => {
-    return getAppDataFromDB().then(dataObject => {
+    return this.getFromDB().then(dataObject => {
       if (dataObject) {
         dataObject[key] = value;
       } else {
@@ -36,8 +36,8 @@ function saveToDB (key, value) {
           [key]: value,
         };
       }
-      let transaction = this.database.transaction(['app_data'], 'readwrite');
-      let dataRequest = transaction.objectStore('app_data').put(dataObject, 1);
+      let transaction = this.database.transaction([this.storeName], 'readwrite');
+      let dataRequest = transaction.objectStore(this.storeName).put(dataObject, 1);
       transaction.oncomplete = resolve(new Promise((resolve, reject) => {
         dataRequest.onerror = reject;
         dataRequest.onsuccess = () => resolve(value);
@@ -56,8 +56,9 @@ function saveToDB (key, value) {
  * @property {getFromDB} getFromDB
  * @param {IDBDatabase} database
  */
-function DBManager (database) {
+function DBManager (database, storeName) {
   this.database = database;
+  this.storeName = storeName;
   this.saveToDB = saveToDB;
   this.getFromDB = getFromDB;
 }
@@ -65,12 +66,12 @@ function DBManager (database) {
 /**
  * Opens database connection.
  * https://developer.mozilla.org/en-US/docs/Web/API/IDBOpenDBRequest
- * @returns {DBManager}
+ * @returns {Promise<DBManager>}
  */
-DBManager.openDB (dataBaseName, storeName) {
+DBManager.openDB = function (dataBaseName, storeName) {
   return new Promise((resolve, reject) => {
     let openRequest = indexedDB.open(dataBaseName, 1);
-    openRequest.onsuccess = () => resolve(new DBManager(openRequest.result));
+    openRequest.onsuccess = () => resolve(new DBManager(openRequest.result, storeName));
     openRequest.onupgradeneeded = () => {
       let db =  openRequest.result;
       db.onerror = reject;
@@ -80,6 +81,7 @@ DBManager.openDB (dataBaseName, storeName) {
     openRequest.onblocked = reject;
     openRequest.onerror = reject;
   });
-}
+};
+
 
 module.exports = DBManager;
