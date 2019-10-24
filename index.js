@@ -1,5 +1,5 @@
 /**
- * Get data from app data store.
+ * Get data from data store.
  * https://developer.mozilla.org/en-US/docs/Web/API/IDBTransaction
  * https://developer.mozilla.org/en-US/docs/Web/API/IDBObjectStore
  * @param {string} key - optional key to get from object
@@ -9,17 +9,17 @@
 function getFromDB (key) {
   return new Promise((resolve, reject) => {
     let transaction = this.database.transaction([this.storeName], 'readwrite');
-    let dataRequest = transaction.objectStore(this.storeName).get(1);
+    let dataRequest = transaction.objectStore(this.storeName).get(key);
     transaction.oncomplete = resolve(new Promise((resolve, reject) => {
       dataRequest.onerror = reject;
-      dataRequest.onsuccess = (event) => resolve(key && event.target.result ? event.target.result[key] : event.target.result);
+      dataRequest.onsuccess = (event) => resolve(event.result);
     }));
     transaction.onerror = reject;
   });
 }
 
 /**
- * Save data to app data store.
+ * Save data to data store.
  * https://developer.mozilla.org/en-US/docs/Web/API/IDBTransaction
  * https://developer.mozilla.org/en-US/docs/Web/API/IDBObjectStore
  * @param {string} key - key to save
@@ -28,22 +28,13 @@ function getFromDB (key) {
  */
 function saveToDB (key, value) {
   return new Promise((resolve, reject) => {
-    return this.getFromDB().then(dataObject => {
-      if (dataObject) {
-        dataObject[key] = value;
-      } else {
-        dataObject = {
-          [key]: value,
-        };
-      }
-      let transaction = this.database.transaction([this.storeName], 'readwrite');
-      let dataRequest = transaction.objectStore(this.storeName).put(dataObject, 1);
-      transaction.oncomplete = resolve(new Promise((resolve, reject) => {
-        dataRequest.onerror = reject;
-        dataRequest.onsuccess = () => resolve(value);
-      }));
-      transaction.onerror = reject;
-    });
+    let transaction = this.database.transaction([this.storeName], 'readwrite');
+    let dataRequest = transaction.objectStore(this.storeName).put(value, key);
+    transaction.oncomplete = resolve(new Promise((resolve, reject) => {
+      dataRequest.onerror = reject;
+      dataRequest.onsuccess = () => resolve(value);
+    }));
+    transaction.onerror = reject;
   });
 }
 
@@ -75,7 +66,7 @@ DBManager.openDB = function (dataBaseName, storeName) {
     openRequest.onupgradeneeded = () => {
       let db =  openRequest.result;
       db.onerror = reject;
-      db.createObjectStore(storeName, { autoIncrement: true });
+      db.createObjectStore(storeName);
       db.onversionchange = resolve;
     };
     openRequest.onblocked = reject;
